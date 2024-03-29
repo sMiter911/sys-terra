@@ -69,6 +69,11 @@ resource "aws_security_group" "web-sg" {
   }
 }
 
+output "web-address" {
+  value = "${aws_instance.web.public_dns}:8080"
+}
+
+
 resource "aws_dynamodb_table" "products" {
   name           = "products"
   billing_mode   = "PROVISIONED"
@@ -113,6 +118,29 @@ resource "aws_dynamodb_table" "products" {
 
 }
 
-output "web-address" {
-  value = "${aws_instance.web.public_dns}:8080"
+resource "aws_iam_role" "terraform_role" {
+  name = "TerraformRole"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action = "sts:AssumeRole",
+        Effect = "Allow",
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ec2_full_access" {
+  role       = aws_iam_role.terraform_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2FullAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "dynamodb_full_access" {
+  role       = aws_iam_role.terraform_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
 }
